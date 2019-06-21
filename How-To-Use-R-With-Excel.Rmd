@@ -220,11 +220,11 @@ Sometimes you may want to look at a single cell, column, or row. To do so, add b
 ```{r, eval=F}
 iris[1,3] # look at the value in the 1st row, 3rd column
 
-iris[1,] # look at all of the values in the 1st row; don't forget the comma!
+iris[1, ] # look at all of the values in the 1st row; don't forget the comma! It is also a style convention to leave a space when we don't specify a column
 
-iris[,3] # look at all of the values in the 3rd column; iris[3] also works
+iris[ ,3] # look at all of the values in the 3rd column; iris[3] also works. We can also leave a space for the rows as part of style conventions
 
-iris[1:3,] # look at all of the values in rows 1 through 3; ':' can also be applied to selecting columns
+iris[1:3, ] # look at all of the values in rows 1 through 3; ':' can also be applied to selecting columns
 ```
 
 A helpful phrase to remember is "Data RoCks!" As in, `Dataframe[Rownumber,Columnnumber]`.
@@ -238,6 +238,45 @@ iris$Sepal.Length[3] # selecting the 3rd value in the Sepal.Length column, or th
 
 iris[c("Sepal.Length","Sepal.Width")] # selecting multiple columns (Sepal.Length, Sepal.Width) from the iris dataset
 ```
+
+The `tidyverse` (`install.packages("tidyverse")`) is a series of very useful packages with special functions and notations aiming to make code readable and reproducible. One such feature is called the pipe (represented by `%>%`). Piping makes chained functions more readable by passing the element on its left as the first argument of the function on the right. Here's an example with `head()`
+
+```{r}
+head(iris)
+```
+is exactly equivalent to
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+```
+
+```{r}
+iris %>% 
+  head()
+```
+or 
+```{r}
+iris %>% 
+  head
+```
+
+In this notation, we can also select variables in a different way to base R. For instance, we can use `select()` and `pull()` to do the same as the dollar sign `$` notation above:
+
+```{r}
+# select() returns the data as a data frame
+iris %>% 
+  select(Sepal.Length) # Note: this is exactly equivalent to select(iris, Sepal.Length)
+
+# pull() returns a vector (equivalent to iris$Sepal.Length)
+iris %>% 
+  pull(Sepal.Length)
+
+# We can select multiple columns as well
+
+iris %>% 
+  select(Sepal.Length, Sepal.Width)
+```
+
+Note that we can pass variable names to `select()` without quotes. The usefulness of the pipe will become more apparent in the following sections.
 
 ### 2.3.5 Changing the Format of a Column
 
@@ -257,6 +296,19 @@ dataset$percentages <- gsub("\\%", "", dataset$percentages)
 dataset$percentages <- as.numeric(dataset$percentages)
 ```
 
+In tidyverse notation, we can modify columns using `mutate()`. Note that we overwrite our `dataset` variable when we do most tidy operations. If we don't do this, the changes will be exploratory (just visible in a console but not necessarily saved)
+
+```{r, eval = F}
+# Currency
+dataset <- dataset %>% 
+  mutate(currency = gsub("\\$", "", currency)) %>% # We only refer to the 'currency' column instead of dataset$currency
+  mutate(currecy = as.numeric(currency)) %>% 
+  mutate(percentages = gsub("\\$", "", percentages)) %>%  # Similarly, we refer to the 'percentages' column
+  mutate(percentages = as.numeric(percentages))
+```
+
+Hopefully you can already appreciate that piping commands puts them into a neat and readable chunk of instructions that reads like a recipe.
+
 ### 2.3.6 Sorting a Dataframe Based on One Column
 
 Back to the `iris` dataset:
@@ -268,11 +320,33 @@ iris_sort_gl <- iris[order(-iris$Sepal.Length),] # order the iris dataset from g
 iris_sort_gl
 ```
 
+In tidy notation we use `arrange`:
+```{r}
+iris_sort_lg <- iris %>% 
+  arrange(Sepal.Length)
+
+iris_sort_lg
+
+
+iris_sort_gl <- iris %>% 
+  arrange(-Sepal.Length)
+
+iris_sort_gl
+```
+
+
 ### 2.3.7 Filtering Data by Column Content
 
 ```{r}
 # Create a new dataset called 'iris2' that only contains Sepal.Length > 6.7
 iris2 <- subset(iris, Sepal.Length > 6.7)
+iris2
+```
+
+In tidy notation we use `filter`:
+```{r}
+iris2 <- iris %>%
+  filter(Sepal.Length > 6.7)
 iris2
 ```
 
@@ -284,6 +358,16 @@ iris$Sepal_Sum <- iris$Sepal.Length + iris$Sepal.Width
 
 # Subtracting 2 columns and assigning values to new column, Sepal_Diff
 iris$Sepal_Diff <- iris$Sepal.Length - iris$Sepal.Width
+
+head(iris)
+```
+
+In tidy notation, we can use `mutate` to create new columns, and even chain them together:
+
+```{r}
+iris <- iris %>% 
+  mutate(Sepal_Sum = Sepal.Length + Sepal.Width) %>% 
+  mutate(Sepal_Diff = Sepal.Length - Sepal.Width)
 
 head(iris)
 ```
@@ -358,14 +442,13 @@ For example, for the following filenames,
 you can create a list of file names only containing "Non-GMWB-Mix" in R by typing the following into the Console.
 
 ```{r,eval=F}
-# Make sure you have the `dplyr` package installed first!
 flist <- list.files(pattern = "Non-GMWB-Mix") %>% head
 ```
 
 If you also type
 
 ```{r,eval=F}
-# Make sure you have the `stringr` package installed first!
+# stringr is part of the tidyverse
 stringr::str_split_fixed(flist,"[_\\.]",4)
 ```
 
@@ -612,12 +695,14 @@ Using the `iris` dataset that's pre-installed in R,
 ```{r,eval=T}
 # If you don't have the ggplot2 library, be sure to
 # install it by typing `install.packages("ggplot2")`
-# into the Console.
-library(ggplot2)  
+# into the Console. ggplot2 is also a package in the tidyverse
+library(ggplot2)  # This would already be loaded if you're using the tidyverse
 
 ggplot(iris, aes(Petal.Width, colour=Species, fill=Species)) +
   geom_density(alpha=0.55)
 ```
+
+If you've been following the tidyverse approach, you can probably tell the `+` before `geom_density()` is serving a very similar purpose to the `%>%` pipe. This has to do with `ggplot2` using the idea of piping commands before the `%>%` pipe became a mainstream in the R community, but they use the same underlying principle. You should only use the `+` to chain `ggplot` commands. 
 
 ### 4.1.2 Histogram
 
